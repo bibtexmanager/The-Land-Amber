@@ -131,6 +131,35 @@
       0%, 100% { filter: drop-shadow(0 0 8px rgba(46,139,87,0.4)); }
       50% { filter: drop-shadow(0 0 20px rgba(46,139,87,0.8)); }
     }
+    /* Confetti */
+    .confetti-piece {
+      position: fixed; width: 10px; height: 10px;
+      z-index: 200; pointer-events: none;
+      animation: confetti-fall 2.5s ease-out forwards;
+    }
+    @keyframes confetti-fall {
+      0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
+    }
+    /* Pin marker */
+    .pin-marker {
+      position: absolute; transform: translate(-50%, -100%);
+      z-index: 50; pointer-events: none;
+      animation: pin-drop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    .pin-marker svg { width: 32px; height: 40px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3)); }
+    @keyframes pin-drop {
+      0% { transform: translate(-50%, -300%) scale(0.5); opacity: 0; }
+      60% { transform: translate(-50%, -90%) scale(1.1); opacity: 1; }
+      100% { transform: translate(-50%, -100%) scale(1); opacity: 1; }
+    }
+    .distance-badge {
+      position: absolute; z-index: 51; pointer-events: none;
+      background: var(--wrong); color: white; padding: 4px 10px;
+      border-radius: 20px; font-size: 0.75rem; font-weight: 700;
+      transform: translate(-50%, -50%); white-space: nowrap;
+      animation: pop-in 0.4s ease;
+    }
 
     /* Sidebar */
     .card { padding: 20px; }
@@ -428,7 +457,7 @@ const FACTS = {
 const HARD_POOL = ['LT','PL','DE','FR','ES','IT','GB','SE','FI','NO','UA','RO','BG','GR','TR','AT','HU','CZ','BE','NL','DK','IE','PT','BY','SK','HR','RS','BA','CH','EE','LV','SI','MK','AL','ME','MD','GE','AM','IS'];
 
 // ─── State ───
-const state = { mode:'medium', rounds:[], roundIndex:0, score:0, streak:0, best:0, locked:false, totalRounds:8 };
+const state = { mode:'medium', rounds:[], roundIndex:0, score:0, streak:0, best:0, locked:false, totalRounds:1 };
 
 const mapContainer = document.getElementById('map-container');
 const promptEl = document.getElementById('prompt');
@@ -538,24 +567,84 @@ function handleClick(id, el) {
   const correct = id === r.target;
   getCountryPaths().forEach(p => { if (p.id !== id && p.id !== r.target) p.classList.add('dimmed'); });
 
+  // Drop a pin on clicked country
+  dropPin(el, correct);
+
   if (correct) {
     el.classList.add('highlight-correct');
     state.score++; state.streak++; state.best = Math.max(state.best, state.streak);
     fbTitle.textContent = t('correctFb');
     fbText.textContent = `${t('thats')} ${cname(id)}. ${t('wellDone')}`;
     fbCard.classList.add('correct-state');
+    launchConfetti();
   } else {
     el.classList.add('highlight-wrong');
     state.streak = 0;
     const ce = mapContainer.querySelector(`path#${CSS.escape(r.target)}`);
-    if (ce) ce.classList.add('highlight-answer');
+    if (ce) {
+      ce.classList.add('highlight-answer');
+      dropPin(ce, true);
+      showDistanceLine(el, ce);
+    }
     fbTitle.textContent = t('wrongFb');
     fbText.textContent = `${t('youClicked')} ${cname(id)}. ${t('correctWas')} ${cname(r.target)}.`;
     fbCard.classList.add('wrong-state');
   }
   randomFact(r.target);
-  nextBtn.disabled = false;
+  // Single attempt: go straight to end after delay
+  setTimeout(() => showEnd(), 2200);
   updateStats();
+}
+
+function dropPin(pathEl, isCorrect) {
+  const svg = mapContainer.querySelector('svg');
+  if (!svg) return;
+  const bb = pathEl.getBBox();
+  const svgRect = svg.getBoundingClientRect();
+  const pt = svg.createSVGPoint();
+  pt.x = bb.x + bb.width / 2; pt.y = bb.y + bb.height / 2;
+  const ctm = svg.getScreenCTM();
+  const screen = pt.matrixTransform(ctm);
+  const pin = document.createElement('div');
+  pin.className = 'pin-marker';
+  const color = isCorrect ? 'var(--correct)' : 'var(--wrong)';
+  pin.innerHTML = `<svg viewBox="0 0 24 36"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="${color}"/><circle cx="12" cy="12" r="5" fill="white"/></svg>`;
+  pin.style.left = (screen.x - svgRect.left + mapContainer.offsetLeft) + 'px';
+  pin.style.top = (screen.y - svgRect.top + mapContainer.offsetTop) + 'px';
+  mapContainer.style.position = 'relative';
+  mapContainer.appendChild(pin);
+}
+
+function showDistanceLine(wrongEl, correctEl) {
+  const svg = mapContainer.querySelector('svg');
+  if (!svg) return;
+  const bb1 = wrongEl.getBBox(); const bb2 = correctEl.getBBox();
+  const x1 = bb1.x + bb1.width/2, y1 = bb1.y + bb1.height/2;
+  const x2 = bb2.x + bb2.width/2, y2 = bb2.y + bb2.height/2;
+  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+  line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+  line.setAttribute('stroke','var(--wrong)'); line.setAttribute('stroke-width','2');
+  line.setAttribute('stroke-dasharray','6,4'); line.setAttribute('opacity','0.6');
+  svg.appendChild(line);
+}
+
+function launchConfetti() {
+  const colors = ['#FDB913','#006A44','#C1272D','#FFD700','#FF6B6B','#4ECDC4','#A855F7'];
+  for (let i = 0; i < 50; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.top = -10 + 'px';
+    piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    piece.style.width = (6 + Math.random()*8) + 'px';
+    piece.style.height = (6 + Math.random()*8) + 'px';
+    piece.style.animationDelay = (Math.random()*0.8) + 's';
+    piece.style.animationDuration = (2 + Math.random()*1.5) + 's';
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 4000);
+  }
 }
 
 function clearHighlights() {
@@ -587,6 +676,8 @@ function shuffle(a) { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.rand
 nextBtn.addEventListener('click', () => {
   if (state.roundIndex < state.totalRounds-1) { state.roundIndex++; renderRound(); } else { showEnd(); }
 });
+// Remove Next button since it's single attempt
+nextBtn.style.display = 'none';
 document.getElementById('restart-btn').addEventListener('click', startGame);
 document.getElementById('end-restart').addEventListener('click', startGame);
 
