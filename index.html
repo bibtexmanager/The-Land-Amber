@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lithuania Carnival Games</title>
+  <meta name="description" content="Interactive Lithuania carnival booth games — quiz and Europe map challenge.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --lt-yellow: #FDB913;
+      --lt-green: #006A44;
+      --lt-red: #C1272D;
+      --bg: #FBF6EC;
+      --bg-warm: #F5EDD8;
+      --card: #FFFFFF;
+      --card-shadow: rgba(0,0,0,0.08);
+      --text: #1A1A1A;
+      --text-dim: #6B6255;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', 'Noto Sans TC', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; overflow-x: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse at 25% 15%, rgba(253,185,19,0.18) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 85%, rgba(0,106,68,0.10) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(193,39,45,0.05) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+    .shell { position: relative; z-index: 1; max-width: 800px; width: 100%; padding: 40px 20px 60px; }
+
+    /* Lang switcher */
+    .lang-bar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+    .lang-sw { display: flex; gap: 2px; background: var(--bg-warm); border-radius: 10px; padding: 3px; }
+    .lang-btn {
+      padding: 7px 12px; border: none; border-radius: 8px;
+      background: transparent; color: var(--text-dim);
+      font-family: inherit; font-size: 0.78rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .lang-btn.active { background: var(--lt-yellow); color: #1A1A1A; }
+    .lang-btn:hover:not(.active) { background: rgba(253,185,19,0.3); }
+
+    /* Hero */
+    .hero {
+      text-align: center; padding: 48px 32px 40px; margin-bottom: 24px;
+      background: var(--card); border-radius: 24px;
+      box-shadow: 0 4px 20px var(--card-shadow);
+      position: relative; overflow: hidden;
+    }
+    .hero::before, .hero::after {
+      content: ''; position: absolute; left: 0; right: 0; height: 5px;
+    }
+    .hero::before {
+      top: 0;
+      background: linear-gradient(90deg, var(--lt-yellow) 0% 33%, var(--lt-green) 33% 66%, var(--lt-red) 66% 100%);
+    }
+    .hero::after {
+      bottom: 0;
+      background: linear-gradient(90deg, var(--lt-red) 0% 33%, var(--lt-green) 33% 66%, var(--lt-yellow) 66% 100%);
+    }
+    .flag-icon {
+      width: 80px; height: 52px; border-radius: 10px; margin: 0 auto 20px;
+      display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+    .flag-icon div { flex: 1; }
+    .fy { background: var(--lt-yellow); }
+    .fg { background: var(--lt-green); }
+    .fr { background: var(--lt-red); }
+    .hero h1 {
+      font-size: clamp(2rem, 6vw, 3.2rem); font-weight: 900;
+      letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 14px;
+    }
+    .hero h1 .accent { color: var(--lt-green); }
+    .hero h1 .accent2 { color: var(--lt-yellow); }
+    .hero p { color: var(--text-dim); font-size: 1.05rem; line-height: 1.6; max-width: 50ch; margin: 0 auto; }
+
+    /* Cards */
+    .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .game-card {
+      display: flex; flex-direction: column; padding: 32px 28px;
+      text-decoration: none; color: inherit;
+      background: var(--card); border-radius: 24px;
+      box-shadow: 0 4px 20px var(--card-shadow);
+      border: 3px solid transparent;
+      transition: all 0.3s; position: relative; overflow: hidden;
+    }
+    .game-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+      border-color: var(--lt-yellow);
+    }
+    .game-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      border-radius: 24px 24px 0 0; opacity: 0; transition: opacity 0.3s;
+    }
+    .game-card:hover::before { opacity: 1; }
+    .card-quiz::before { background: linear-gradient(90deg, var(--lt-yellow), var(--lt-green)); }
+    .card-map::before { background: linear-gradient(90deg, var(--lt-green), #3b82f6); }
+
+    .card-emoji {
+      font-size: 3rem; margin-bottom: 16px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+      animation: float 3s ease-in-out infinite;
+    }
+    .card-map .card-emoji { animation-delay: 0.4s; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+    .card-tag {
+      display: inline-block; font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      padding: 5px 12px; border-radius: 8px; margin-bottom: 14px; width: fit-content;
+    }
+    .card-quiz .card-tag { background: #FEF3C7; color: #B45309; }
+    .card-map .card-tag { background: #DBEAFE; color: #2563EB; }
+
+    .game-card h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 10px; }
+    .game-card p.desc { font-size: 0.88rem; color: var(--text-dim); line-height: 1.6; flex: 1; }
+    .card-features { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .chip {
+      font-size: 0.65rem; font-weight: 600; padding: 5px 10px; border-radius: 8px;
+      background: var(--bg-warm); color: var(--text-dim);
+    }
+    .card-cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 20px; font-size: 0.85rem; font-weight: 700;
+      color: var(--lt-green); transition: gap 0.2s;
+    }
+    .game-card:hover .card-cta { gap: 10px; color: var(--lt-yellow); }
+
+    .footer {
+      text-align: center; margin-top: 32px;
+      font-size: 0.78rem; color: var(--text-dim); line-height: 1.7;
+    }
+    .footer a { color: var(--lt-green); text-decoration: none; font-weight: 600; }
+    .footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) { .cards { grid-template-columns: 1fr; } .hero { padding: 36px 20px 32px; } }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Lang -->
+  <div class="lang-bar">
+    <div class="lang-sw">
+      <button class="lang-btn active" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="lt">LT</button>
+      <button class="lang-btn" data-lang="zh">中文</button>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="flag-icon"><div class="fy"></div><div class="fg"></div><div class="fr"></div></div>
+    <h1 id="hero-title"><span class="accent2">Lithuania</span> <span class="accent">Carnival Games</span></h1>
+    <p id="hero-desc">Two interactive booth games to discover Lithuania — test your trivia knowledge or find it on the map of Europe.</p>
+  </div>
+
+  <!-- Cards -->
+  <div class="cards">
+    <a href="quiz.html" class="game-card card-quiz" id="card-quiz" data-page="quiz.html">
+      <div class="card-emoji">🎯</div>
+      <span class="card-tag" id="quiz-tag">Poke Quiz</span>
+      <h2 id="quiz-title">Lithuania Poke Quiz</h2>
+      <p class="desc" id="quiz-desc">Poke a box, answer a question! Flags, pictures, true/false and more — how much do you know about Lithuania?</p>
+      <div class="card-features">
+        <span class="chip" id="chip-geo">🌍 Geography</span>
+        <span class="chip" id="chip-cul">🏛️ Culture</span>
+        <span class="chip" id="chip-food">🍲 Food</span>
+        <span class="chip" id="chip-flag">🇱🇹 Flags</span>
+        <span class="chip" id="chip-sport">🏀 Sports</span>
+      </div>
+      <span class="card-cta" id="quiz-cta">Play Now <span>→</span></span>
+    </a>
+
+    <a href="map.html" class="game-card card-map" id="card-map" data-page="map.html">
+      <div class="card-emoji">🗺️</div>
+      <span class="card-tag" id="map-tag">Map Game</span>
+      <h2 id="map-title">Find Lithuania</h2>
+      <p class="desc" id="map-desc">Click on Lithuania (or other countries) on an interactive map of Europe. Three difficulty modes.</p>
+      <div class="card-features">
+        <span class="chip" id="chip-easy">🟢 Easy</span>
+        <span class="chip" id="chip-med">🟡 Medium</span>
+        <span class="chip" id="chip-hard">🔴 Hard</span>
+        <span class="chip" id="chip-count">44 countries</span>
+      </div>
+      <span class="card-cta" id="map-cta">Play Now <span>→</span></span>
+    </a>
+  </div>
+
+  <div class="footer">
+    <span id="footer-text">Lithuania Carnival Booth · Interactive games for visitors</span><br>
+    <a href="lithuania-booth-variants/index.html" id="footer-link">View older variants →</a>
+  </div>
+</div>
+
+<script>
+const UI = {
+  en: {
+    heroTitle: '<span class="accent2">Lithuania</span> <span class="accent">Carnival Games</span>',
+    heroDesc: 'Two interactive booth games to discover Lithuania — test your trivia knowledge or find it on the map of Europe.',
+    quizTag: 'Poke Quiz', quizTitle: 'Lithuania Poke Quiz',
+    quizDesc: 'Poke a box, answer a question! Flags, pictures, true/false and more — how much do you know about Lithuania?',
+    mapTag: 'Map Game', mapTitle: 'Find Lithuania',
+    mapDesc: 'Click on Lithuania (or other countries) on an interactive map of Europe. Three difficulty modes.',
+    playCta: 'Play Now',
+    geo: '🌍 Geography', cul: '🏛️ Culture', food: '🍲 Food', flag: '🇱🇹 Flags', sport: '🏀 Sports',
+    easy: '🟢 Easy', med: '🟡 Medium', hard: '🔴 Hard', count: '44 countries',
+    footer: 'Lithuania Carnival Booth · Interactive games for visitors',
+    footerLink: 'View older variants →'
+  },
+  lt: {
+    heroTitle: '<span class="accent2">Lietuvos</span> <span class="accent">Karnavaliniai Žaidimai</span>',
+    heroDesc: 'Du interaktyvūs stendo žaidimai Lietuvai atrasti — patikrinkite žinias arba raskite ją Europos žemėlapyje.',
+    quizTag: 'Poke Viktorina', quizTitle: 'Lietuvos Poke Viktorina',
+    quizDesc: 'Paspausk langelį, atsakyk į klausimą! Vėliavos, paveikslėliai, tiesa/netiesa ir daugiau!',
+    mapTag: 'Žemėlapio Žaidimas', mapTitle: 'Rask Lietuvą',
+    mapDesc: 'Paspauskite Lietuvą interaktyviame Europos žemėlapyje. Trys sudėtingumo lygiai.',
+    playCta: 'Žaisti',
+    geo: '🌍 Geografija', cul: '🏛️ Kultūra', food: '🍲 Maistas', flag: '🇱🇹 Vėliavos', sport: '🏀 Sportas',
+    easy: '🟢 Lengva', med: '🟡 Vidutinis', hard: '🔴 Sunku', count: '44 šalys',
+    footer: 'Lietuvos karnavaliniai žaidimai · Interaktyvūs žaidimai lankytojams',
+    footerLink: 'Žiūrėti senesnius variantus →'
+  },
+  zh: {
+    heroTitle: '<span class="accent2">立陶宛</span> <span class="accent">嘉年華遊戲</span>',
+    heroDesc: '兩款互動攤位遊戲帶你認識立陶宛——測試你的知識或在歐洲地圖上找到它。',
+    quizTag: '戳戳問答', quizTitle: '立陶宛戳戳問答',
+    quizDesc: '戳一個格子，回答問題！國旗、圖片、是非題等——你對立陶宛了解多少？',
+    mapTag: '地圖遊戲', mapTitle: '找到立陶宛',
+    mapDesc: '在互動式歐洲地圖上點擊立陶宛（或其他國家）。三種難度模式。',
+    playCta: '開始遊戲',
+    geo: '🌍 地理', cul: '🏛️ 文化', food: '🍲 美食', flag: '🇱🇹 國旗', sport: '🏀 運動',
+    easy: '🟢 簡單', med: '🟡 中等', hard: '🔴 困難', count: '44個國家',
+    footer: '立陶宛嘉年華攤位 · 為訪客打造的互動遊戲',
+    footerLink: '查看舊版本 →'
+  }
+};
+
+let lang = 'en';
+
+// ─── Language inheritance ───
+function initLang() {
+  const stored = localStorage.getItem('lt_quiz_lang');
+  if (stored && UI[stored]) { lang = stored; }
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+}
+
+function saveLang() {
+  localStorage.setItem('lt_quiz_lang', lang);
+}
+
+function updateLinks() {
+  document.querySelectorAll('.game-card[data-page]').forEach(a => {
+    a.href = a.dataset.page + '?lang=' + lang;
+  });
+}
+
+function applyLang() {
+  const u = UI[lang] || UI.en;
+  document.getElementById('hero-title').innerHTML = u.heroTitle;
+  document.getElementById('hero-desc').textContent = u.heroDesc;
+  document.getElementById('quiz-tag').textContent = u.quizTag;
+  document.getElementById('quiz-title').textContent = u.quizTitle;
+  document.getElementById('quiz-desc').textContent = u.quizDesc;
+  document.getElementById('map-tag').textContent = u.mapTag;
+  document.getElementById('map-title').textContent = u.mapTitle;
+  document.getElementById('map-desc').textContent = u.mapDesc;
+  document.getElementById('quiz-cta').innerHTML = u.playCta + ' <span>→</span>';
+  document.getElementById('map-cta').innerHTML = u.playCta + ' <span>→</span>';
+  document.getElementById('chip-geo').textContent = u.geo;
+  document.getElementById('chip-cul').textContent = u.cul;
+  document.getElementById('chip-food').textContent = u.food;
+  document.getElementById('chip-flag').textContent = u.flag;
+  document.getElementById('chip-sport').textContent = u.sport;
+  document.getElementById('chip-easy').textContent = u.easy;
+  document.getElementById('chip-med').textContent = u.med;
+  document.getElementById('chip-hard').textContent = u.hard;
+  document.getElementById('chip-count').textContent = u.count;
+  document.getElementById('footer-text').textContent = u.footer;
+  document.getElementById('footer-link').textContent = u.footerLink;
+  updateLinks();
+}
+
+document.querySelectorAll('.lang-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    lang = btn.dataset.lang;
+    saveLang();
+    applyLang();
+  });
+});
+
+initLang();
+applyLang();
+</script>
+</body>
+</html>
