@@ -511,7 +511,7 @@
       <p class="fb-body" id="fb-body" data-i18n="pickOption">Tap the answer you think is correct!</p>
     </div>
 
-    <div class="fact-card">
+    <div class="fact-card" id="fact-card">
       <div class="fact-label" data-i18n="funFact">💡 Fun Fact</div>
       <p class="fact-body" id="fact">…</p>
     </div>
@@ -1037,7 +1037,19 @@ function ql(q, field) { return (q[field] && (q[field][lang] || q[field].en)) || 
 
 // ─── Build poke grid ───
 function buildGrid() {
-  state.questions = shuffle(QUESTIONS).slice(0, GRID_SIZE);
+  // Ensure at least 1 of each type: image, flag, mc, tf
+  const byType = {image:[], flag:[], mc:[], tf:[]};
+  QUESTIONS.forEach(q => { if (byType[q.type]) byType[q.type].push(q); });
+  const picks = [];
+  ['image','flag','mc','tf'].forEach(t => {
+    const pool = shuffle(byType[t]);
+    if (pool.length) picks.push(pool[0]);
+  });
+  // Fill remaining slots from shuffled pool (excluding already picked)
+  const pickSet = new Set(picks);
+  const rest = shuffle(QUESTIONS.filter(q => !pickSet.has(q)));
+  while (picks.length < GRID_SIZE && rest.length) picks.push(rest.shift());
+  state.questions = shuffle(picks);
   state.cells = [];
   state.openedCount = 0; state.score = 0; state.streak = 0;
   const grid = $('poke-grid');
@@ -1161,12 +1173,14 @@ function renderQuestion(q) {
     });
   }
 
-  // Reset feedback
+  // Hide feedback until answer is picked (no hints)
   const fb = $('fb-card');
   fb.classList.remove('correct-state','wrong-state');
-  $('fb-heading').textContent = t('chooseAnswer');
-  $('fb-body').textContent = t('pickOption');
-  $('fact').textContent = '…';
+  fb.style.display = 'none';
+  $('fb-heading').textContent = '';
+  $('fb-body').textContent = '';
+  $('fact').textContent = '';
+  $('fact-card').style.display = 'none';
   $('next-btn').disabled = true;
 
   // Re-animate card
@@ -1179,7 +1193,10 @@ function pickAnswer(idx, isCorrect, btn, container, q) {
   if (state.locked) return;
   state.locked = true;
 
+  // Show feedback card now
   const fb = $('fb-card');
+  fb.style.display = '';
+  $('fact-card').style.display = '';
   const allBtns = container.querySelectorAll('button');
 
   if (q.type === 'tf') {
