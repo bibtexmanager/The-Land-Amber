@@ -177,13 +177,21 @@
       transform: scale(0.92);
     }
     .poke-cell.opened {
-      opacity: 0.3; cursor: default; transform: scale(0.95);
+      opacity: 0.25; cursor: default; transform: scale(0.9);
+      filter: grayscale(0.4);
+      animation: poke-burst 0.5s ease forwards;
     }
     .poke-cell.locked { cursor: default; }
     .poke-cell.current {
       animation: poke-pop 0.5s ease;
       box-shadow: 0 0 0 4px var(--lt-yellow), 0 8px 24px rgba(253,185,19,0.3);
       transform: scale(1.05);
+    }
+    @keyframes poke-burst {
+      0% { transform: scale(1); opacity: 1; filter: grayscale(0); }
+      30% { transform: scale(1.15) rotate(2deg); opacity: 0.8; }
+      60% { transform: scale(0.85) rotate(-1deg); opacity: 0.4; }
+      100% { transform: scale(0.9); opacity: 0.25; filter: grayscale(0.4); }
     }
 
     /* Poke cell color palette */
@@ -206,9 +214,18 @@
     /* ═══════════════════════════════════════════════
        QUESTION SCREEN
        ═══════════════════════════════════════════════ */
-    .question-screen { display: none; }
-    .question-screen.active { display: block; }
-    .poke-screen.hidden { display: none; }
+    .question-screen {
+      display: none; position: fixed; inset: 0; z-index: 50;
+      background: rgba(251,246,236,0.88); backdrop-filter: blur(8px);
+      overflow-y: auto; padding: 20px;
+      animation: fade-in 0.3s ease;
+    }
+    .question-screen.active { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 40px; }
+    .question-screen .q-card { max-width: 700px; width: 100%; }
+    .question-screen .fb-card,
+    .question-screen .fact-card { max-width: 700px; width: 100%; }
+    .question-screen .btn-row { max-width: 700px; width: 100%; justify-content: center; }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
     .q-card {
       background: var(--card); border-radius: var(--radius);
@@ -356,9 +373,23 @@
       pointer-events: none;
     }
     .opt-flag-btn.correct { border-color: var(--correct); background: var(--correct-bg); }
-    .opt-flag-btn.wrong { border-color: var(--wrong); background: var(--wrong-bg); }
+    .opt-flag-btn.wrong { border-color: var(--wrong); background: var(--wrong-bg); animation: shake-wrong 0.4s ease; }
     .opt-flag-btn:disabled { cursor: default; opacity: 0.5; }
     .opt-flag-btn.correct:disabled, .opt-flag-btn.wrong:disabled { opacity: 1; }
+    .opt-btn.correct { border-color: var(--correct) !important; background: var(--correct-bg) !important; animation: pulse-correct 0.6s ease; }
+    .opt-btn.wrong { border-color: var(--wrong) !important; background: var(--wrong-bg) !important; animation: shake-wrong 0.4s ease; }
+    @keyframes shake-wrong {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+    @keyframes pulse-correct {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.04); box-shadow: 0 0 20px rgba(46,139,87,0.4); }
+      100% { transform: scale(1); }
+    }
 
     @media (max-width: 480px) {
       .options-grid { grid-template-columns: 1fr; }
@@ -1094,18 +1125,61 @@ function ql(q, field) { return (q[field] && (q[field][lang] || q[field].en)) || 
 
 // ─── Build poke grid ───
 function buildGrid() {
-  // Ensure at least 1 of each type: image, flag, mc, tf
+  // Ensure: 1 of each type + no duplicate categories + avoid similar topics
   const byType = {image:[], flag:[], mc:[], tf:[]};
   QUESTIONS.forEach(q => { if (byType[q.type]) byType[q.type].push(q); });
   const picks = [];
-  ['image','flag','mc','tf'].forEach(t => {
-    const pool = shuffle(byType[t]);
-    if (pool.length) picks.push(pool[0]);
+  const usedCats = new Set();
+  const usedKeywords = new Set();
+
+  function getKeywords(q) {
+    const txt = (q.q.en || '').toLowerCase();
+    const kws = [];
+    if (txt.includes('vilnius')) kws.push('vilnius');
+    if (txt.includes('flag')) kws.push('flag');
+    if (txt.includes('basketball')) kws.push('basketball');
+    if (txt.includes('amber')) kws.push('amber');
+    if (txt.includes('stork')) kws.push('stork');
+    if (txt.includes('cepelinai') || txt.includes('dumpling')) kws.push('cepelinai');
+    if (txt.includes('cross')) kws.push('crosses');
+    if (txt.includes('balloon')) kws.push('balloon');
+    if (txt.includes('forest')) kws.push('forest');
+    if (txt.includes('baltic way') || txt.includes('1989')) kws.push('balticway');
+    if (txt.includes('uzupis') || txt.includes('užupis')) kws.push('uzupis');
+    return kws;
+  }
+
+  function canPick(q) {
+    // Allow max 2 per category
+    const catCount = picks.filter(p => p.category === q.category).length;
+    if (catCount >= 2) return false;
+    // No overlapping keywords
+    const kws = getKeywords(q);
+    if (kws.some(k => usedKeywords.has(k))) return false;
+    return true;
+  }
+
+  function addPick(q) {
+    picks.push(q);
+    usedCats.add(q.category);
+    getKeywords(q).forEach(k => usedKeywords.add(k));
+  }
+
+  // Step 1: one of each type, diverse categories
+  ['image','flag','mc','tf'].forEach(typ => {
+    const pool = shuffle(byType[typ]);
+    for (const q of pool) {
+      if (canPick(q)) { addPick(q); break; }
+    }
   });
-  // Fill remaining slots from shuffled pool (excluding already picked)
-  const pickSet = new Set(picks);
-  const rest = shuffle(QUESTIONS.filter(q => !pickSet.has(q)));
-  while (picks.length < GRID_SIZE && rest.length) picks.push(rest.shift());
+
+  // Step 2: fill remaining with diverse picks
+  const rest = shuffle(QUESTIONS.filter(q => !picks.includes(q)));
+  for (const q of rest) {
+    if (picks.length >= GRID_SIZE) break;
+    if (canPick(q)) addPick(q);
+  }
+
   state.questions = shuffle(picks);
   state.cells = [];
   state.openedCount = 0; state.score = 0; state.streak = 0;
@@ -1127,13 +1201,11 @@ function buildGrid() {
 }
 
 function showPokeScreen() {
-  $('poke-screen').classList.remove('hidden');
   $('question-screen').classList.remove('active');
   $('end-overlay').classList.remove('show');
 }
 
 function showQuestionScreen() {
-  $('poke-screen').classList.add('hidden');
   $('question-screen').classList.add('active');
 }
 
@@ -1273,6 +1345,7 @@ function pickAnswer(idx, isCorrect, btn, container, q) {
     state.best = Math.max(state.best, state.streak);
     fb.classList.add('correct-state');
     $('fb-heading').textContent = t('correct');
+    launchQuizConfetti();
     if (q.type === 'tf') {
       $('fb-body').textContent = q.answer ? t('trueLabel') + ' ' + t('rightAnswer') : t('falseLabel') + ' ' + t('rightAnswer');
     } else {
@@ -1341,6 +1414,16 @@ function launchConfetti() {
     wrap.appendChild(el);
   }
   setTimeout(() => { wrap.innerHTML = ''; }, 5000);
+}
+
+function launchQuizConfetti() {
+  const colors = ['#FDB913','#006A44','#C1272D','#FFD700','#4ECDC4','#A855F7'];
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;width:${6+Math.random()*6}px;height:${6+Math.random()*6}px;background:${colors[Math.floor(Math.random()*colors.length)]};left:${Math.random()*100}vw;top:-10px;z-index:200;pointer-events:none;border-radius:${Math.random()>0.5?'50%':'2px'};animation:confetti-fall ${2+Math.random()*1.5}s ease-out ${Math.random()*0.6}s forwards;`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
 }
 
 $('end-play').addEventListener('click', () => { buildGrid(); });
