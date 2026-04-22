@@ -1095,6 +1095,42 @@ const QUESTIONS = [
     answer:0,
     fact:{en:'Gediminas dreamed of an iron wolf howling on a hilltop — a priest said it meant a great city would rise there! 🐺', lt:'Gediminui prisisapnavo geležinis vilkas staugiantis ant kalvos — žynys pasakė, kad čia iškils didis miestas! 🐺', zh:'格季米納斯夢見一隻鐵狼在山頂嚎叫——祭司說這意味著一座偉大的城市將在那裡崛起！🐺'}
   },
+
+  // ──── LITHUANIAN LANGUAGE QUESTIONS ────
+  {
+    type:'mc', category:'culture',
+    q:{en:'What does "Labas" mean in Lithuanian?', lt:'Ką reiškia "Labas" lietuviškai?', zh:'立陶宛語「Labas」是什麼意思？'},
+    options:{en:['Hello','Goodbye','Thank you','Sorry'], lt:['Sveikas','Viso gero','Ačiū','Atsiprašau'], zh:['你好','再見','謝謝','對不起']},
+    answer:0,
+    fact:{en:'Labas! It\'s the most common greeting in Lithuania — try saying it: LAH-bahs! 👋', lt:'Labas! Tai dažniausias pasisveikinimas Lietuvoje! 👋', zh:'Labas！這是立陶宛最常見的問候語——試著說：LAH-bahs！👋'}
+  },
+  {
+    type:'mc', category:'culture',
+    q:{en:'How do you say "Thank you" in Lithuanian?', lt:'Kaip pasakyti "Thank you" lietuviškai?', zh:'立陶宛語怎麼說「謝謝」？'},
+    options:{en:['Ačiū','Labas','Prašom','Taip'], lt:['Ačiū','Labas','Prašom','Taip'], zh:['Ačiū','Labas','Prašom','Taip']},
+    answer:0,
+    fact:{en:'Ačiū (ah-CHOO) — it sounds like a sneeze but means "thank you"! 🤧😄', lt:'Ačiū — skamba kaip čiaudėjimas, bet reiškia „dėkoju"! 🤧😄', zh:'Ačiū（ah-CHOO）——聽起來像打噴嚏，但意思是「謝謝」！🤧😄'}
+  },
+  {
+    type:'mc', category:'culture',
+    q:{en:'Which of these is written in Lithuanian?', lt:'Kuris iš šių parašytas lietuviškai?', zh:'以下哪個是用立陶宛語寫的？'},
+    options:{en:['Aš myliu Lietuvą','Я люблю Литву','Λιθουανία','リトアニア'], lt:['Aš myliu Lietuvą','Я люблю Литву','Λιθουανία','リトアニア'], zh:['Aš myliu Lietuvą','Я люблю Литву','Λιθουανία','リトアニア']},
+    answer:0,
+    fact:{en:'Lithuanian uses the Latin alphabet with special letters like č, š, ų, ė — not Cyrillic like Russian! 🔤', lt:'Lietuvių kalba naudoja lotynų abėcėlę su specialiomis raidėmis: č, š, ų, ė! 🔤', zh:'立陶宛語使用拉丁字母，有特殊字母如č、š、ų、ė——不像俄語用西里爾字母！🔤'}
+  },
+  {
+    type:'mc', category:'culture',
+    q:{en:'What does "Sveikas!" mean when Lithuanians raise a glass?', lt:'Ką reiškia "Sveikas!" kai lietuviai kelia taurę?', zh:'立陶宛人舉杯時說「Sveikas!」是什麼意思？'},
+    options:{en:['Cheers! / To your health!','I\'m hungry','Good night','Help me'], lt:['Į sveikatą!','Aš alkanas','Labos nakties','Padėkite'], zh:['乾杯！/祝你健康！','我餓了','晚安','幫幫我']},
+    answer:0,
+    fact:{en:'Sveikas literally means "healthy" — Lithuanians toast to your health! 🍻🇱🇹', lt:'Sveikas reiškia „sveikas" — lietuviai geria į sveikatą! 🍻🇱🇹', zh:'Sveikas字面意思是「健康」——立陶宛人為你的健康乾杯！🍻🇱🇹'}
+  },
+  {
+    type:'tf', category:'culture',
+    q:{en:'Lithuanian uses the Cyrillic alphabet (like Russian).', lt:'Lietuvių kalba naudoja kirilicos abėcėlę (kaip rusų).', zh:'立陶宛語使用西里爾字母（像俄語一樣）。'},
+    answer:false,
+    fact:{en:'False! Lithuanian uses the Latin alphabet — it\'s the oldest surviving Indo-European language still using Latin script! 🔠', lt:'Neteisingai! Lietuvių kalba naudoja lotynų abėcėlę — tai seniausia gyva indoeuropiečių kalba, vis dar naudojanti lotynų raštą! 🔠', zh:'錯！立陶宛語使用拉丁字母——它是現存最古老的仍使用拉丁文字的印歐語言！🔠'}
+  },
 ];
 
 // ═══════════════════════════════════════════════════
@@ -1146,6 +1182,7 @@ function buildGrid() {
     if (txt.includes('forest')) kws.push('forest');
     if (txt.includes('baltic way') || txt.includes('1989')) kws.push('balticway');
     if (txt.includes('uzupis') || txt.includes('užupis')) kws.push('uzupis');
+    if (txt.includes('labas') || txt.includes('ačiū') || txt.includes('sveikas') || txt.includes('written in lithuanian') || txt.includes('cyrillic')) kws.push('litwords');
     return kws;
   }
 
