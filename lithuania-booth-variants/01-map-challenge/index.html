@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lithuania Map Challenge</title>
+  <style>
+    :root {
+      --yellow: #fdb913;
+      --green: #006a44;
+      --red: #c1272d;
+      --ink: #172019;
+      --sea: #90c7db;
+      --card: rgba(255, 250, 240, 0.92);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(253, 185, 19, 0.35), transparent 25%),
+        radial-gradient(circle at top right, rgba(0, 106, 68, 0.25), transparent 32%),
+        linear-gradient(180deg, #eef4e8, #f7f0e0 52%, #fffaf0);
+    }
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 18px 40px;
+    }
+    .topbar {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: 1.2fr 0.85fr;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+    .panel {
+      border: 2px solid var(--ink);
+      border-radius: 24px;
+      background: var(--card);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+    .stripe {
+      height: 14px;
+      background: linear-gradient(180deg, var(--yellow) 0 33%, var(--green) 33% 66%, var(--red) 66% 100%);
+    }
+    .hero {
+      padding: 24px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      line-height: 0.93;
+      letter-spacing: -0.03em;
+    }
+    .sub {
+      margin: 0;
+      font-size: 1.02rem;
+      line-height: 1.6;
+      max-width: 54ch;
+    }
+    .stats {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-content: start;
+    }
+    .stat {
+      border: 2px solid var(--ink);
+      border-radius: 18px;
+      background: #fffdf7;
+      padding: 14px;
+    }
+    .stat .label {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.72;
+    }
+    .stat .value {
+      margin-top: 8px;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+    .stage {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+    .map-wrap {
+      padding: 18px;
+    }
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.55), transparent 50%),
+        linear-gradient(180deg, #cfe5ec, #e9f4f7 42%, #f8f4e9);
+      border: 2px solid rgba(23, 32, 25, 0.22);
+    }
+    .country {
+      cursor: pointer;
+      stroke: rgba(23, 32, 25, 0.66);
+      stroke-width: 3;
+      transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
+      transform-origin: center;
+    }
+    .country:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.05);
+    }
+    .country.dimmed {
+      opacity: 0.55;
+    }
+    .country.correct {
+      fill: var(--yellow);
+    }
+    .country.wrong {
+      fill: #d58f8f;
+    }
+    .country.answer {
+      fill: var(--green);
+    }
+    .sea {
+      cursor: pointer;
+      transition: filter 0.18s ease;
+    }
+    .sea:hover {
+      filter: brightness(1.04);
+    }
+    .sea.correct {
+      fill: var(--yellow);
+    }
+    .sea.wrong {
+      fill: #d58f8f;
+    }
+    .sea.answer {
+      fill: var(--green);
+    }
+    .side {
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+    .prompt {
+      border: 2px solid var(--ink);
+      border-radius: 20px;
+      background: #fffdf7;
+      padding: 18px;
+    }
+    .prompt h2 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.72;
+    }
+    .question {
+      margin: 0;
+      font-size: 1.7rem;
+      line-height: 1.12;
+    }
+    .fact, .feedback, .controls {
+      border: 2px solid var(--ink);
+      border-radius: 20px;
+      background: #fffdf7;
+      padding: 16px 18px;
+    }
+    .feedback {
+      min-height: 96px;
+    }
+    .feedback strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.15rem;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 2px solid var(--ink);
+      background: var(--yellow);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: white;
+    }
+    button:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+    .legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 0.9rem;
+      opacity: 0.78;
+    }
+    .pill {
+      border: 1px solid rgba(23, 32, 25, 0.25);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.65);
+    }
+    @media (max-width: 950px) {
+      .topbar, .stage {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="topbar">
+      <div class="panel">
+        <div class="stripe"></div>
+        <div class="hero">
+          <h1>Lithuania Map Challenge</h1>
+          <p class="sub">
+            A booth-friendly upgrade to the original map concept. Instead of asking only
+            "Where is Lithuania?" every round, this version rotates through Lithuania, its
+            neighbors, and Baltic geography prompts.
+          </p>
+        </div>
+        <div class="stripe"></div>
+      </div>
+      <div class="panel stats">
+        <div class="stat">
+          <div class="label">Score</div>
+          <div class="value" id="score">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Streak</div>
+          <div class="value" id="streak">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Round</div>
+          <div class="value" id="round">1/8</div>
+        </div>
+        <div class="stat">
+          <div class="label">Best</div>
+          <div class="value" id="best">0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="stage">
+      <div class="panel map-wrap">
+        <svg viewBox="0 0 860 620" aria-label="Stylized Baltic map">
+          <path id="sea" class="sea" fill="#9ed1e0" stroke="#5a8b98" stroke-width="3"
+            d="M40 52 C132 24, 238 34, 330 48 C408 60, 490 84, 554 116 C632 154, 702 208, 760 298
+               C796 352, 814 408, 820 474 L816 580 L38 580 Z"></path>
+
+          <path id="sweden" class="country" data-id="SE" fill="#ccb084"
+            d="M84 150 L140 128 L182 176 L168 238 L132 304 L96 320 L78 270 L88 214 Z"></path>
+          <path id="latvia" class="country" data-id="LV" fill="#9db987"
+            d="M414 180 L510 164 L602 190 L624 242 L544 262 L460 264 L410 232 Z"></path>
+          <path id="lithuania" class="country" data-id="LT" fill="#dbc48f"
+            d="M404 244 L458 264 L548 262 L610 292 L584 346 L514 366 L432 354 L384 306 Z"></path>
+          <path id="belarus" class="country" data-id="BY" fill="#c9b0a4"
+            d="M554 262 L664 252 L748 310 L744 388 L650 440 L544 430 L582 346 L610 292 Z"></path>
+          <path id="poland" class="country" data-id="PL" fill="#d7a69e"
+            d="M282 314 L384 306 L432 354 L514 366 L504 432 L402 462 L316 448 L262 394 Z"></path>
+          <path id="kaliningrad" class="country" data-id="RU-KGD" fill="#b88f7e"
+            d="M286 258 L350 252 L386 286 L356 324 L290 318 L262 286 Z"></path>
+          <path id="russia" class="country" data-id="RU" fill="#b7aeb0"
+            d="M602 190 L764 182 L806 234 L748 310 L664 252 L624 242 Z"></path>
+
+          <text x="112" y="120" font-size="20" fill="#24434e">Sweden</text>
+          <text x="454" y="214" font-size="20" fill="#223822">Latvia</text>
+          <text x="430" y="316" font-size="22" fill="#403319">Lithuania</text>
+          <text x="590" y="354" font-size="20" fill="#51393b">Belarus</text>
+          <text x="334" y="414" font-size="22" fill="#54322a">Poland</text>
+          <text x="244" y="244" font-size="16" fill="#56392f">Kaliningrad</text>
+          <text x="650" y="210" font-size="18" fill="#444">Russia</text>
+          <text x="188" y="110" font-size="26" fill="#3d6c79" opacity="0.8">Baltic Sea</text>
+        </svg>
+      </div>
+
+      <div class="panel side">
+        <div class="prompt">
+          <h2>Current Prompt</h2>
+          <p class="question" id="question"></p>
+        </div>
+
+        <div class="feedback" id="feedback">
+          <strong>Tap the map.</strong>
+          <span id="feedback-text">Start by choosing the region that matches the prompt.</span>
+        </div>
+
+        <div class="fact" id="fact">
+          Lithuania fact: Vilnius, Kaunas, Klaipeda, and Trakai all make good booth talking points.
+        </div>
+
+        <div class="controls">
+          <button id="next" disabled>Next Round</button>
+          <button class="secondary" id="restart">Restart</button>
+          <button class="secondary" onclick="location.href='../index.html'">Hub</button>
+        </div>
+
+        <div class="legend">
+          <span class="pill">8 rounds</span>
+          <span class="pill">map + geography prompts</span>
+          <span class="pill">good replacement for one-note Lithuania tap</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const rounds = [
+      {
+        prompt: "Tap Lithuania.",
+        target: "LT",
+        fact: "Lithuania sits on the Baltic and is compact enough for a booth map game to feel fair."
+      },
+      {
+        prompt: "Which country borders Lithuania to the north?",
+        target: "LV",
+        fact: "Latvia borders Lithuania on the north side."
+      },
+      {
+        prompt: "Tap Lithuania's southwestern neighbor.",
+        target: "PL",
+        fact: "Poland shares Lithuania's land border to the southwest."
+      },
+      {
+        prompt: "Which sea does Lithuania border?",
+        target: "SEA",
+        fact: "Lithuania touches the Baltic Sea, with Klaipeda as its main port."
+      },
+      {
+        prompt: "Tap the region between Lithuania and mainland Russia on the coast.",
+        target: "RU-KGD",
+        fact: "Kaliningrad is the Russian exclave on Lithuania's western side."
+      },
+      {
+        prompt: "Which country lies directly east and south of Lithuania?",
+        target: "BY",
+        fact: "Belarus borders much of Lithuania's eastern and southern side."
+      },
+      {
+        prompt: "Tap the country whose capital is Vilnius.",
+        target: "LT",
+        fact: "Vilnius is Lithuania's capital and a strong booth storytelling hook."
+      },
+      {
+        prompt: "Tap the country with the yellow, green, and red flag.",
+        target: "LT",
+        fact: "Lithuania's tricolor is one of the easiest flag rounds to add to a booth experience."
+      }
+    ];
+
+    const state = {
+      order: [],
+      roundIndex: 0,
+      score: 0,
+      streak: 0,
+      best: 0,
+      locked: false
+    };
+
+    const questionEl = document.getElementById("question");
+    const feedbackTextEl = document.getElementById("feedback-text");
+    const feedbackEl = document.getElementById("feedback");
+    const factEl = document.getElementById("fact");
+    const nextBtn = document.getElementById("next");
+    const scoreEl = document.getElementById("score");
+    const streakEl = document.getElementById("streak");
+    const roundEl = document.getElementById("round");
+    const bestEl = document.getElementById("best");
+    const clickable = [...document.querySelectorAll(".country, .sea")];
+
+    function shuffle(items) {
+      const copy = items.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function labelFor(id) {
+      return {
+        "LT": "Lithuania",
+        "LV": "Latvia",
+        "PL": "Poland",
+        "BY": "Belarus",
+        "RU-KGD": "Kaliningrad",
+        "RU": "Russia",
+        "SEA": "the Baltic Sea"
+      }[id] || id;
+    }
+
+    function updateStats() {
+      scoreEl.textContent = state.score;
+      streakEl.textContent = state.streak;
+      bestEl.textContent = state.best;
+      roundEl.textContent = (state.roundIndex + 1) + "/" + state.order.length;
+    }
+
+    function clearHighlights() {
+      clickable.forEach((el) => {
+        el.classList.remove("correct", "wrong", "answer", "dimmed");
+      });
+    }
+
+    function currentRound() {
+      return state.order[state.roundIndex];
+    }
+
+    function renderRound() {
+      clearHighlights();
+      const round = currentRound();
+      questionEl.textContent = round.prompt;
+      factEl.textContent = "Lithuania fact: " + round.fact;
+      feedbackEl.querySelector("strong").textContent = "Tap the map.";
+      feedbackTextEl.textContent = "Start by choosing the region that matches the prompt.";
+      nextBtn.disabled = true;
+      state.locked = false;
+      updateStats();
+    }
+
+    function finishChoice(chosenId, element) {
+      if (state.locked) return;
+      state.locked = true;
+      const round = currentRound();
+      const correct = chosenId === round.target;
+
+      clickable.forEach((el) => {
+        const id = el.classList.contains("sea") ? "SEA" : el.dataset.id;
+        if (id !== round.target && el !== element) {
+          el.classList.add("dimmed");
+        }
+      });
+
+      if (correct) {
+        state.score += 1;
+        state.streak += 1;
+        state.best = Math.max(state.best, state.streak);
+        element.classList.add(element.classList.contains("sea") ? "correct" : "correct");
+        feedbackEl.querySelector("strong").textContent = "Correct.";
+        feedbackTextEl.textContent = "Nice hit. You picked " + labelFor(chosenId) + ".";
+      } else {
+        state.streak = 0;
+        element.classList.add(element.classList.contains("sea") ? "wrong" : "wrong");
+        const answerEl = clickable.find((el) => {
+          const id = el.classList.contains("sea") ? "SEA" : el.dataset.id;
+          return id === round.target;
+        });
+        if (answerEl) answerEl.classList.add(answerEl.classList.contains("sea") ? "answer" : "answer");
+        feedbackEl.querySelector("strong").textContent = "Not quite.";
+        feedbackTextEl.textContent = "The right answer was " + labelFor(round.target) + ".";
+      }
+
+      updateStats();
+      nextBtn.disabled = false;
+    }
+
+    clickable.forEach((el) => {
+      el.addEventListener("click", () => {
+        const id = el.classList.contains("sea") ? "SEA" : el.dataset.id;
+        finishChoice(id, el);
+      });
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (!state.locked) return;
+      if (state.roundIndex < state.order.length - 1) {
+        state.roundIndex += 1;
+        renderRound();
+        return;
+      }
+      const total = state.order.length;
+      questionEl.textContent = "Finished.";
+      feedbackEl.querySelector("strong").textContent = "Final score: " + state.score + " / " + total;
+      feedbackTextEl.textContent =
+        state.score >= 6
+          ? "This version is much better for repeat booth play than a single static Lithuania prompt."
+          : "Replay it or combine it with the flag and photo variants for more variety.";
+      factEl.textContent = "Next step idea: merge this map mode into the mixed booth build.";
+      nextBtn.disabled = true;
+    });
+
+    document.getElementById("restart").addEventListener("click", start);
+
+    function start() {
+      state.order = shuffle(rounds);
+      state.roundIndex = 0;
+      state.score = 0;
+      state.streak = 0;
+      state.locked = false;
+      renderRound();
+    }
+
+    start();
+  </script>
+</body>
+</html>
