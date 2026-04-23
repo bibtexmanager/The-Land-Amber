@@ -630,17 +630,17 @@ function dropPin(pathEl, isCorrect) {
   const svg = mapContainer.querySelector('svg');
   if (!svg) return;
   const bb = pathEl.getBBox();
-  const svgRect = svg.getBoundingClientRect();
   const pt = svg.createSVGPoint();
   pt.x = bb.x + bb.width / 2; pt.y = bb.y + bb.height / 2;
   const ctm = svg.getScreenCTM();
   const screen = pt.matrixTransform(ctm);
+  const containerRect = mapContainer.getBoundingClientRect();
   const pin = document.createElement('div');
   pin.className = 'pin-marker';
   const color = isCorrect ? 'var(--correct)' : 'var(--wrong)';
   pin.innerHTML = `<svg viewBox="0 0 24 36"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="${color}"/><circle cx="12" cy="12" r="5" fill="white"/></svg>`;
-  pin.style.left = (screen.x - svgRect.left + mapContainer.offsetLeft) + 'px';
-  pin.style.top = (screen.y - svgRect.top + mapContainer.offsetTop) + 'px';
+  pin.style.left = (screen.x - containerRect.left) + 'px';
+  pin.style.top = (screen.y - containerRect.top) + 'px';
   mapContainer.style.position = 'relative';
   mapContainer.appendChild(pin);
 }
