@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Choose Lithuania's Flag</title>
+  <style>
+    :root {
+      --yellow: #fdb913;
+      --green: #006a44;
+      --red: #c1272d;
+      --ink: #131313;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 20%, rgba(253, 185, 19, 0.35), transparent 26%),
+        radial-gradient(circle at 92% 14%, rgba(0, 106, 68, 0.24), transparent 24%),
+        linear-gradient(180deg, #f7f6ef, #f3ecdc 50%, #fffaf3);
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 18px 40px;
+    }
+    .hero {
+      border: 2px solid var(--ink);
+      border-radius: 28px;
+      background: rgba(255,255,255,0.8);
+      padding: 24px;
+      margin-bottom: 18px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.08);
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+    .sub {
+      margin: 0;
+      line-height: 1.6;
+      max-width: 60ch;
+    }
+    .meta {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background: #fff;
+      padding: 8px 12px;
+      font-weight: 700;
+    }
+    .layout {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: 0.9fr 1.1fr;
+    }
+    .panel {
+      border: 2px solid var(--ink);
+      border-radius: 24px;
+      background: rgba(255,255,255,0.84);
+      padding: 20px;
+      box-shadow: 0 14px 28px rgba(0,0,0,0.06);
+    }
+    .prompt {
+      font-size: 1.7rem;
+      line-height: 1.12;
+      margin: 0 0 16px;
+    }
+    .feedback {
+      min-height: 90px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .flags {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .flag-card {
+      border: 2px solid var(--ink);
+      border-radius: 22px;
+      background: #fffdf8;
+      padding: 14px;
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    }
+    .flag-card:hover {
+      transform: translateY(-3px);
+    }
+    .flag-card.disabled { cursor: default; }
+    .flag-card.correct { outline: 4px solid #2f9a5e; }
+    .flag-card.wrong { outline: 4px solid #cf5656; }
+    .flag-box {
+      height: 124px;
+      border: 2px solid var(--ink);
+      border-radius: 14px;
+      overflow: hidden;
+      background: #ddd;
+      display: grid;
+    }
+    .label {
+      margin-top: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 0.9rem;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      background: var(--yellow);
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: white;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .flag-lt { grid-template-rows: 1fr 1fr 1fr; }
+    .flag-lt div:nth-child(1) { background: #fdb913; }
+    .flag-lt div:nth-child(2) { background: #006a44; }
+    .flag-lt div:nth-child(3) { background: #c1272d; }
+
+    .flag-lv { grid-template-rows: 1fr 0.4fr 1fr; }
+    .flag-lv div:nth-child(1),
+    .flag-lv div:nth-child(3) { background: #8a1538; }
+    .flag-lv div:nth-child(2) { background: white; }
+
+    .flag-ee { grid-template-rows: 1fr 1fr 1fr; }
+    .flag-ee div:nth-child(1) { background: #4891d9; }
+    .flag-ee div:nth-child(2) { background: #111; }
+    .flag-ee div:nth-child(3) { background: white; }
+
+    .flag-hu { grid-template-rows: 1fr 1fr 1fr; }
+    .flag-hu div:nth-child(1) { background: #ce2939; }
+    .flag-hu div:nth-child(2) { background: white; }
+    .flag-hu div:nth-child(3) { background: #477050; }
+
+    .flag-pl { grid-template-rows: 1fr 1fr; }
+    .flag-pl div:nth-child(1) { background: white; }
+    .flag-pl div:nth-child(2) { background: #dc143c; }
+
+    .flag-ro { grid-template-columns: 1fr 1fr 1fr; }
+    .flag-ro div:nth-child(1) { background: #002b7f; }
+    .flag-ro div:nth-child(2) { background: #fcd116; }
+    .flag-ro div:nth-child(3) { background: #ce1126; }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Choose Lithuania's Flag</h1>
+      <p class="sub">
+        A fast visual booth game focused on flag recognition. This directly covers the variant you
+        asked for and is more immediate than a text-only quiz.
+      </p>
+      <div class="meta">
+        <span class="pill" id="score">Score 0</span>
+        <span class="pill" id="round">Round 1 / 8</span>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="panel">
+        <p class="prompt" id="prompt"></p>
+        <div class="feedback" id="feedback">
+          Pick the right flag to continue.
+        </div>
+        <div class="controls">
+          <button id="next" disabled>Next</button>
+          <button class="secondary" id="restart">Restart</button>
+          <button class="secondary" onclick="location.href='../index.html'">Hub</button>
+        </div>
+      </div>
+
+      <div class="flags" id="flags"></div>
+    </section>
+  </div>
+
+  <script>
+    const flagDefs = {
+      LT: { name: "Lithuania", cls: "flag-lt" },
+      LV: { name: "Latvia", cls: "flag-lv" },
+      EE: { name: "Estonia", cls: "flag-ee" },
+      HU: { name: "Hungary", cls: "flag-hu" },
+      PL: { name: "Poland", cls: "flag-pl" },
+      RO: { name: "Romania", cls: "flag-ro" }
+    };
+
+    const rounds = [
+      { prompt: "Choose Lithuania's flag.", answer: "LT", options: ["LT", "LV", "EE", "HU"] },
+      { prompt: "Which flag belongs to the country with capital Vilnius?", answer: "LT", options: ["LT", "PL", "RO", "LV"] },
+      { prompt: "Find the yellow-green-red tricolor.", answer: "LT", options: ["EE", "LT", "HU", "PL"] },
+      { prompt: "Which flag should be on the Lithuania booth?", answer: "LT", options: ["RO", "LV", "LT", "PL"] },
+      { prompt: "Choose the Lithuanian national flag.", answer: "LT", options: ["HU", "EE", "PL", "LT"] },
+      { prompt: "Which one is Lithuania and not Latvia?", answer: "LT", options: ["LV", "LT", "EE", "PL"] },
+      { prompt: "Pick Lithuania before the visitor next to you does.", answer: "LT", options: ["RO", "HU", "LT", "LV"] },
+      { prompt: "Which flag matches the country famous for Vilnius and Trakai?", answer: "LT", options: ["PL", "LT", "EE", "HU"] }
+    ];
+
+    const state = {
+      order: [],
+      index: 0,
+      score: 0,
+      locked: false
+    };
+
+    const promptEl = document.getElementById("prompt");
+    const feedbackEl = document.getElementById("feedback");
+    const flagsEl = document.getElementById("flags");
+    const nextBtn = document.getElementById("next");
+    const scoreEl = document.getElementById("score");
+    const roundEl = document.getElementById("round");
+
+    function shuffle(items) {
+      const copy = items.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function updateMeta() {
+      scoreEl.textContent = "Score " + state.score;
+      roundEl.textContent = "Round " + (state.index + 1) + " / " + state.order.length;
+    }
+
+    function makeFlagBox(code) {
+      const def = flagDefs[code];
+      const box = document.createElement("div");
+      box.className = "flag-box " + def.cls;
+      const segments = def.cls === "flag-pl" ? 2 : (def.cls === "flag-ro" ? 3 : 3);
+      for (let i = 0; i < segments; i++) {
+        box.appendChild(document.createElement("div"));
+      }
+      return box;
+    }
+
+    function renderRound() {
+      const round = state.order[state.index];
+      promptEl.textContent = round.prompt;
+      feedbackEl.textContent = "Pick the right flag to continue.";
+      nextBtn.disabled = true;
+      state.locked = false;
+      updateMeta();
+      flagsEl.innerHTML = "";
+
+      round.options.forEach((code) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "flag-card";
+        card.appendChild(makeFlagBox(code));
+        const label = document.createElement("div");
+        label.className = "label";
+        label.textContent = flagDefs[code].name;
+        card.appendChild(label);
+        card.addEventListener("click", () => pick(code, card));
+        flagsEl.appendChild(card);
+      });
+    }
+
+    function pick(code, card) {
+      if (state.locked) return;
+      state.locked = true;
+      const round = state.order[state.index];
+      const correct = code === round.answer;
+      [...flagsEl.children].forEach((node) => node.classList.add("disabled"));
+
+      if (correct) {
+        card.classList.add("correct");
+        state.score += 1;
+        feedbackEl.textContent = "Correct. Lithuania is the yellow-green-red tricolor.";
+      } else {
+        card.classList.add("wrong");
+        [...flagsEl.children].forEach((node, idx) => {
+          const option = round.options[idx];
+          if (option === round.answer) node.classList.add("correct");
+        });
+        feedbackEl.textContent =
+          "Not quite. Lithuania is the yellow-green-red tricolor, not " + flagDefs[code].name + ".";
+      }
+
+      updateMeta();
+      nextBtn.disabled = false;
+    }
+
+    nextBtn.addEventListener("click", () => {
+      if (state.index < state.order.length - 1) {
+        state.index += 1;
+        renderRound();
+        return;
+      }
+
+      promptEl.textContent = "Finished.";
+      feedbackEl.textContent =
+        "Final score: " + state.score + " / " + state.order.length +
+        ". This one is strong for fast booth traffic because visitors understand it instantly.";
+      flagsEl.innerHTML = "";
+      nextBtn.disabled = true;
+      updateMeta();
+    });
+
+    document.getElementById("restart").addEventListener("click", start);
+
+    function start() {
+      state.order = shuffle(rounds);
+      state.index = 0;
+      state.score = 0;
+      renderRound();
+    }
+
+    start();
+  </script>
+</body>
+</html>

@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Find Lithuania on the Map</title>
+  <meta name="description" content="Interactive Europe map game — find Lithuania and other countries.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --lt-yellow: #FDB913;
+      --lt-green: #006A44;
+      --lt-red: #C1272D;
+      --bg: #FBF6EC;
+      --bg-warm: #F5EDD8;
+      --card: #FFFFFF;
+      --card-shadow: rgba(0,0,0,0.08);
+      --text: #1A1A1A;
+      --text-dim: #6B6255;
+      --correct: #2E8B57;
+      --correct-bg: #E6F5EC;
+      --wrong: #C1272D;
+      --wrong-bg: #FCE8E8;
+      --radius: 20px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', 'Noto Sans TC', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 10%, rgba(253,185,19,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 90%, rgba(0,106,68,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(193,39,45,0.04) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+
+    .shell {
+      position: relative; z-index: 1;
+      max-width: 1400px; margin: 0 auto;
+      padding: 16px 16px 40px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 16px;
+      min-height: 100vh; align-content: start;
+    }
+    .map-area { grid-column: 1; }
+    .sidebar { grid-column: 2; display: flex; flex-direction: column; gap: 14px; }
+    .glass {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 12px var(--card-shadow);
+    }
+
+    /* Header */
+    .header {
+      grid-column: 1 / -1;
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 24px; flex-wrap: wrap;
+    }
+    .flag-bar {
+      display: flex; flex-direction: column;
+      width: 8px; height: 48px; border-radius: 4px; overflow: hidden; flex-shrink: 0;
+    }
+    .flag-bar div { flex: 1; }
+    .fs-y { background: var(--lt-yellow); }
+    .fs-g { background: var(--lt-green); }
+    .fs-r { background: var(--lt-red); }
+    .header h1 {
+      font-size: clamp(1.2rem, 3vw, 1.7rem);
+      font-weight: 900; letter-spacing: -0.03em;
+    }
+    .header-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .lang-sw { display: flex; gap: 2px; background: var(--bg-warm); border-radius: 10px; padding: 3px; }
+    .lang-btn {
+      padding: 6px 10px; border: none; border-radius: 8px;
+      background: transparent; color: var(--text-dim);
+      font-family: inherit; font-size: 0.75rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .lang-btn.active { background: var(--lt-yellow); color: #1A1A1A; }
+    .lang-btn:hover:not(.active) { background: rgba(253,185,19,0.3); }
+    .back-link {
+      color: var(--text-dim); text-decoration: none;
+      font-size: 0.8rem; font-weight: 600;
+      padding: 7px 14px; border-radius: 10px;
+      border: 2px solid #E8E0D0; transition: all 0.2s;
+    }
+    .back-link:hover { background: var(--bg-warm); border-color: var(--lt-yellow); }
+
+    /* Map */
+    .map-frame { padding: 12px; overflow: hidden; }
+    .map-frame svg { display: block; width: 100%; height: auto; border-radius: 14px; }
+    .map-frame svg path {
+      fill: #E8E0D0; stroke: rgba(0,0,0,0.12); stroke-width: 0.5;
+      cursor: pointer; transition: fill 0.2s, filter 0.2s;
+    }
+    .map-frame svg path:hover { fill: #D4C9B5; filter: brightness(0.95); }
+    .map-frame svg path.highlight-correct {
+      fill: var(--correct) !important;
+      animation: pulse-glow 0.8s ease 2;
+    }
+    .map-frame svg path.highlight-wrong {
+      fill: var(--wrong) !important;
+      animation: shake 0.4s ease;
+    }
+    .map-frame svg path.highlight-answer {
+      fill: var(--lt-yellow) !important;
+      filter: drop-shadow(0 0 14px rgba(253,185,19,0.6));
+    }
+    .map-frame svg path.dimmed { opacity: 0.3; }
+    .map-frame svg circle { display: none; }
+    .map-frame svg text.country-label {
+      font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+      font-size: 7px; font-weight: 700;
+      fill: var(--text-dim);
+      pointer-events: none; text-anchor: middle;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-4px); }
+      40% { transform: translateX(4px); }
+      60% { transform: translateX(-3px); }
+      80% { transform: translateX(3px); }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { filter: drop-shadow(0 0 8px rgba(46,139,87,0.4)); }
+      50% { filter: drop-shadow(0 0 20px rgba(46,139,87,0.8)); }
+    }
+    /* Confetti */
+    .confetti-piece {
+      position: fixed; width: 10px; height: 10px;
+      z-index: 200; pointer-events: none;
+      animation: confetti-fall 2.5s ease-out forwards;
+    }
+    @keyframes confetti-fall {
+      0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
+    }
+    /* Pin marker */
+    .pin-marker {
+      position: absolute; transform: translate(-50%, -100%);
+      z-index: 50; pointer-events: none;
+      animation: pin-drop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    .pin-marker svg { width: 32px; height: 40px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3)); }
+    @keyframes pin-drop {
+      0% { transform: translate(-50%, -300%) scale(0.5); opacity: 0; }
+      60% { transform: translate(-50%, -90%) scale(1.1); opacity: 1; }
+      100% { transform: translate(-50%, -100%) scale(1); opacity: 1; }
+    }
+    .distance-badge {
+      position: absolute; z-index: 51; pointer-events: none;
+      background: var(--wrong); color: white; padding: 4px 10px;
+      border-radius: 20px; font-size: 0.75rem; font-weight: 700;
+      transform: translate(-50%, -50%); white-space: nowrap;
+      animation: pop-in 0.4s ease;
+    }
+
+    /* Sidebar */
+    .card { padding: 20px; }
+    .card-label {
+      font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-dim);
+      margin-bottom: 10px; font-weight: 700;
+    }
+    .prompt-text { font-size: 1.35rem; font-weight: 700; line-height: 1.3; letter-spacing: -0.02em; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .stat-box {
+      text-align: center; background: var(--bg-warm);
+      border-radius: 12px; padding: 12px 8px;
+    }
+    .stat-val {
+      font-size: 1.6rem; font-weight: 800;
+      color: var(--lt-green);
+    }
+    .stat-label {
+      font-size: 0.65rem; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-dim); margin-top: 4px; font-weight: 600;
+    }
+    .feedback-card { min-height: 80px; transition: all 0.3s; border-left: 5px solid #E8E0D0; }
+    .feedback-card.correct-state { border-left-color: var(--correct); background: var(--correct-bg); }
+    .feedback-card.wrong-state { border-left-color: var(--wrong); background: var(--wrong-bg); }
+    .fb-title { font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
+    .fb-text { font-size: 0.88rem; color: var(--text-dim); line-height: 1.5; }
+    .fact-card { background: #FFFBF0; border-left: 5px solid var(--lt-yellow); }
+    .fact-text { font-size: 0.85rem; line-height: 1.6; color: var(--text-dim); }
+    .fact-text strong { color: var(--lt-green); }
+
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      font-family: inherit; font-weight: 700; border: none; border-radius: 14px;
+      padding: 12px 20px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;
+    }
+    button:disabled { opacity: 0.35; cursor: default; }
+    .btn-primary { background: linear-gradient(135deg, var(--lt-yellow), #e5a711); color: #1A1A1A; box-shadow: 0 3px 12px rgba(253,185,19,0.3); }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(253,185,19,0.4); }
+    .btn-secondary { background: var(--bg-warm); color: var(--text); border: 2px solid #E8E0D0 !important; }
+    .btn-secondary:hover { background: #EDE5D2; }
+
+    .progress-wrap { height: 6px; background: var(--bg-warm); border-radius: 3px; overflow: hidden; }
+    .progress-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, var(--lt-green), var(--lt-yellow));
+      transition: width 0.4s ease;
+    }
+
+    .end-overlay {
+      display: none; position: fixed; inset: 0; z-index: 100;
+      background: rgba(251,246,236,0.92); backdrop-filter: blur(12px);
+      align-items: center; justify-content: center;
+    }
+    .end-overlay.show { display: flex; }
+    .end-box { padding: 48px 36px; text-align: center; max-width: 460px; width: 90%; animation: pop-in 0.4s ease; }
+    .end-emoji { font-size: 3.5rem; margin-bottom: 16px; }
+    .end-score {
+      font-size: 3rem; font-weight: 900; letter-spacing: -0.03em;
+      color: var(--lt-green);
+    }
+    .end-label { color: var(--text-dim); margin: 8px 0 24px; font-size: 0.95rem; }
+    @keyframes pop-in { 0% { transform: scale(0.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar, .header { grid-column: 1; }
+    }
+
+    /* ─── Mobile (< 600px) ─── */
+    @media (max-width: 600px) {
+      .shell { padding: 8px 8px 20px; gap: 10px; }
+      .header { padding: 10px 14px; gap: 8px; }
+      .header h1 { font-size: 1rem; }
+      .lang-btn { padding: 5px 8px; font-size: 0.65rem; }
+      .back-link { padding: 5px 10px; font-size: 0.7rem; }
+      .map-frame { padding: 8px; }
+      .card { padding: 14px; }
+      .card-label { font-size: 0.6rem; margin-bottom: 6px; }
+      .prompt-text { font-size: 1.1rem; }
+      .stats-grid { gap: 6px; }
+      .stat-box { padding: 8px 4px; border-radius: 8px; }
+      .stat-val { font-size: 1.2rem; }
+      .stat-label { font-size: 0.55rem; }
+      .fb-title { font-size: 0.85rem; }
+      .fb-text { font-size: 0.8rem; }
+      .fact-text { font-size: 0.78rem; }
+      button { padding: 10px 16px; font-size: 0.8rem; border-radius: 12px; }
+      .end-box { padding: 32px 20px; }
+      .end-emoji { font-size: 2.5rem; }
+      .end-score { font-size: 2.2rem; }
+    }
+
+    /* Touch-friendly */
+    @media (pointer: coarse) {
+      .map-frame svg path { stroke-width: 0.8; }
+      button { min-height: 44px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="header glass">
+    <div class="flag-bar"><div class="fs-y"></div><div class="fs-g"></div><div class="fs-r"></div></div>
+    <h1 data-i18n="title">Find Lithuania on the Map</h1>
+    <div class="header-right">
+      <div class="lang-sw">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="lt">LT</button>
+        <button class="lang-btn" data-lang="zh">中文</button>
+      </div>
+      <a href="index.html" class="back-link" data-i18n="back">← Hub</a>
+    </div>
+  </div>
+
+  <div class="map-area glass map-frame" id="map-container"></div>
+
+  <div class="sidebar">
+
+    <div class="card glass">
+      <div class="card-label"><span data-i18n="progressLabel">Progress</span> — <span id="round-text">1 / 8</span></div>
+      <div class="progress-wrap"><div class="progress-fill" id="progress" style="width:12.5%"></div></div>
+    </div>
+    <div class="card glass">
+      <div class="card-label" data-i18n="yourTask">Your Task</div>
+      <p class="prompt-text" id="prompt">Click on Lithuania</p>
+    </div>
+    <div class="card glass">
+      <div class="card-label" data-i18n="scoreLabel">Score</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val" id="score">0</div><div class="stat-label" data-i18n="scoreStat">Score</div></div>
+        <div class="stat-box"><div class="stat-val" id="streak">0</div><div class="stat-label" data-i18n="streakStat">Streak</div></div>
+        <div class="stat-box"><div class="stat-val" id="best">0</div><div class="stat-label" data-i18n="bestStat">Best</div></div>
+      </div>
+    </div>
+    <div class="card glass feedback-card" id="feedback-card">
+      <p class="fb-title" id="fb-title" data-i18n="tapCountry">Tap a country on the map</p>
+      <p class="fb-text" id="fb-text" data-i18n="findMatch">Find the country that matches the prompt.</p>
+    </div>
+    <div class="card glass fact-card">
+      <div class="card-label" data-i18n="didYouKnow">💡 Did you know?</div>
+      <p class="fact-text" id="fact"></p>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" id="next-btn" disabled data-i18n="nextRound">Next Round →</button>
+      <button class="btn-secondary" id="restart-btn" data-i18n="restart">Restart</button>
+    </div>
+  </div>
+</div>
+
+<div class="end-overlay" id="end-overlay">
+  <div class="end-box glass">
+    <div class="end-emoji" id="end-emoji">🎉</div>
+    <div class="end-score" id="end-score">8 / 8</div>
+    <p class="end-label" id="end-label"></p>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn-primary" id="end-restart" data-i18n="playAgain">Play Again</button>
+      <a href="index.html"><button class="btn-secondary" data-i18n="backHub">Back to Hub</button></a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── i18n ───
+const UI = {
+  en: {
+    title: "Find Lithuania on the Map", back: "← Hub",
+    difficulty: "Difficulty", easy: "🟢 Easy", medium: "🟡 Medium", hard: "🔴 Hard",
+    progressLabel: "Progress", yourTask: "Your Task", scoreLabel: "Score",
+    scoreStat: "Score", streakStat: "Streak", bestStat: "Best",
+    tapCountry: "Tap a country on the map", findMatch: "Find the country that matches the prompt.",
+    didYouKnow: "💡 Did you know?", nextRound: "Next Round →", restart: "Restart",
+    playAgain: "Play Again", backHub: "Back to Hub",
+    correctFb: "✅ Correct!", wrongFb: "❌ Not quite",
+    thats: "That's", wellDone: "Well done!",
+    youClicked: "You clicked", correctWas: "The correct answer was",
+    clickOn: "Click on", findOn: "Find", whereIs: "Where is", tapOn: "Tap", locateOn: "Locate",
+    canYouFind: "Can you find", pointTo: "Point to", showMe: "Show me",
+    perfect: "Perfect score! You really know European geography!",
+    great: "Great job! Solid map knowledge.",
+    notBad: "Not bad! Try again to improve.",
+    keepExploring: "Keep exploring! Practice makes perfect."
+  },
+  lt: {
+    title: "Rask Lietuvą žemėlapyje", back: "← Pradžia",
+    difficulty: "Sudėtingumas", easy: "🟢 Lengva", medium: "🟡 Vidutinis", hard: "🔴 Sunku",
+    progressLabel: "Progresas", yourTask: "Užduotis", scoreLabel: "Rezultatas",
+    scoreStat: "Taškai", streakStat: "Serija", bestStat: "Geriausias",
+    tapCountry: "Paspauskite šalį žemėlapyje", findMatch: "Raskite šalį, atitinkančią užduotį.",
+    didYouKnow: "💡 Ar žinojote?", nextRound: "Kitas raundas →", restart: "Iš naujo",
+    playAgain: "Žaisti dar kartą", backHub: "Grįžti",
+    correctFb: "✅ Teisingai!", wrongFb: "❌ Neteisingai",
+    thats: "Tai", wellDone: "Puiku!",
+    youClicked: "Paspaudėte", correctWas: "Teisingas atsakymas buvo",
+    clickOn: "Paspauskite", findOn: "Raskite", whereIs: "Kur yra", tapOn: "Bakstelėkite",
+    locateOn: "Suraskite", canYouFind: "Ar rasite", pointTo: "Nurodykite", showMe: "Parodykite",
+    perfect: "Puikus rezultatas! Jūs tikrai žinote Europos geografiją!",
+    great: "Puiku! Tvirtinamos žinios.",
+    notBad: "Neblogai! Pabandykite dar kartą.",
+    keepExploring: "Tyrinėkite toliau! Praktika tobulina."
+  },
+  zh: {
+    title: "在地圖上找到立陶宛", back: "← 首頁",
+    difficulty: "難度", easy: "🟢 簡單", medium: "🟡 中等", hard: "🔴 困難",
+    progressLabel: "進度", yourTask: "你的任務", scoreLabel: "分數",
+    scoreStat: "分數", streakStat: "連續", bestStat: "最佳",
+    tapCountry: "點擊地圖上的國家", findMatch: "找到符合提示的國家。",
+    didYouKnow: "💡 你知道嗎？", nextRound: "下一輪 →", restart: "重新開始",
+    playAgain: "再玩一次", backHub: "返回首頁",
+    correctFb: "✅ 正確！", wrongFb: "❌ 不太對",
+    thats: "那是", wellDone: "做得好！",
+    youClicked: "你點擊了", correctWas: "正確答案是",
+    clickOn: "點擊", findOn: "找到", whereIs: "哪裡是", tapOn: "點選",
+    locateOn: "找出", canYouFind: "你能找到", pointTo: "指出", showMe: "指出",
+    perfect: "滿分！你真的很了解歐洲地理！",
+    great: "做得好！地圖知識扎實。",
+    notBad: "不錯！再試一次提高分數。",
+    keepExploring: "繼續探索！熟能生巧。"
+  }
+};
+
+let lang = 'en';
+
+// ─── Language inheritance ───
+function initLang() {
+  const params = new URLSearchParams(window.location.search);
+  const urlLang = params.get('lang');
+  if (urlLang && UI[urlLang]) { lang = urlLang; }
+  else {
+    const stored = localStorage.getItem('lt_quiz_lang');
+    if (stored && UI[stored]) { lang = stored; }
+  }
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+}
+function saveLang() { localStorage.setItem('lt_quiz_lang', lang); }
+
+function t(k) { return (UI[lang] && UI[lang][k]) || UI.en[k] || k; }
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+}
+
+// ─── Country data ───
+const COUNTRIES = {
+  AL:{en:"Albania",lt:"Albanija",zh:"阿爾巴尼亞"}, AD:{en:"Andorra",lt:"Andora",zh:"安道爾"},
+  AM:{en:"Armenia",lt:"Armėnija",zh:"亞美尼亞"}, AT:{en:"Austria",lt:"Austrija",zh:"奧地利"},
+  BE:{en:"Belgium",lt:"Belgija",zh:"比利時"}, BG:{en:"Bulgaria",lt:"Bulgarija",zh:"保加利亞"},
+  BA:{en:"Bosnia & Herzegovina",lt:"Bosnija ir Hercegovina",zh:"波士尼亞與赫塞哥維納"},
+  BY:{en:"Belarus",lt:"Baltarusija",zh:"白俄羅斯"}, CH:{en:"Switzerland",lt:"Šveicarija",zh:"瑞士"},
+  CZ:{en:"Czech Republic",lt:"Čekija",zh:"捷克"}, DE:{en:"Germany",lt:"Vokietija",zh:"德國"},
+  DK:{en:"Denmark",lt:"Danija",zh:"丹麥"}, EE:{en:"Estonia",lt:"Estija",zh:"愛沙尼亞"},
+  FI:{en:"Finland",lt:"Suomija",zh:"芬蘭"}, GB:{en:"United Kingdom",lt:"Jungtinė Karalystė",zh:"英國"},
+  GE:{en:"Georgia",lt:"Gruzija",zh:"喬治亞"}, GR:{en:"Greece",lt:"Graikija",zh:"希臘"},
+  HR:{en:"Croatia",lt:"Kroatija",zh:"克羅埃西亞"}, HU:{en:"Hungary",lt:"Vengrija",zh:"匈牙利"},
+  IE:{en:"Ireland",lt:"Airija",zh:"愛爾蘭"}, IS:{en:"Iceland",lt:"Islandija",zh:"冰島"},
+  IT:{en:"Italy",lt:"Italija",zh:"義大利"}, LI:{en:"Liechtenstein",lt:"Lichtenšteinas",zh:"列支敦士登"},
+  LT:{en:"Lithuania",lt:"Lietuva",zh:"立陶宛"}, LU:{en:"Luxembourg",lt:"Liuksemburgas",zh:"盧森堡"},
+  LV:{en:"Latvia",lt:"Latvija",zh:"拉脫維亞"}, MD:{en:"Moldova",lt:"Moldova",zh:"摩爾多瓦"},
+  MK:{en:"N. Macedonia",lt:"Š. Makedonija",zh:"北馬其頓"}, ME:{en:"Montenegro",lt:"Juodkalnija",zh:"蒙特內哥羅"},
+  NL:{en:"Netherlands",lt:"Nyderlandai",zh:"荷蘭"}, NO:{en:"Norway",lt:"Norvegija",zh:"挪威"},
+  PL:{en:"Poland",lt:"Lenkija",zh:"波蘭"}, PT:{en:"Portugal",lt:"Portugalija",zh:"葡萄牙"},
+  RO:{en:"Romania",lt:"Rumunija",zh:"羅馬尼亞"}, RS:{en:"Serbia",lt:"Serbija",zh:"塞爾維亞"},
+  SK:{en:"Slovakia",lt:"Slovakija",zh:"斯洛伐克"}, SI:{en:"Slovenia",lt:"Slovėnija",zh:"斯洛維尼亞"},
+  SE:{en:"Sweden",lt:"Švedija",zh:"瑞典"}, TR:{en:"Turkey",lt:"Turkija",zh:"土耳其"},
+  UA:{en:"Ukraine",lt:"Ukraina",zh:"烏克蘭"}, XK:{en:"Kosovo",lt:"Kosovas",zh:"科索沃"},
+  CY:{en:"Cyprus",lt:"Kipras",zh:"賽普勒斯"}, ES:{en:"Spain",lt:"Ispanija",zh:"西班牙"},
+  FR:{en:"France",lt:"Prancūzija",zh:"法國"}
+};
+function cname(id) { const c = COUNTRIES[id]; return c ? (c[lang] || c.en) : id; }
+
+const FACTS = {
+  LT: {
+    en: [
+      "Lithuania's capital Vilnius has one of the largest surviving medieval old towns in Europe.",
+      "Lithuania was the last country in Europe to adopt Christianity, in 1387.",
+      "The geographic centre of Europe is near Vilnius.",
+      "Basketball is essentially a second religion in Lithuania.",
+      "The Curonian Spit is a UNESCO World Heritage Site shared with Russia.",
+      "The Hill of Crosses near Šiauliai has over 100,000 crosses."
+    ],
+    lt: [
+      "Vilniaus senamiestis yra vienas didžiausių viduramžių senamiesčių Europoje.",
+      "Lietuva buvo paskutinė Europos šalis priėmusi krikščionybę 1387 m.",
+      "Europos geografinis centras yra netoli Vilniaus.",
+      "Krepšinis Lietuvoje yra tarsi antra religija.",
+      "Kuršių nerija – UNESCO pasaulio paveldo objektas.",
+      "Kryžių kalne prie Šiaulių stovi daugiau nei 100 000 kryžių."
+    ],
+    zh: [
+      "維爾紐斯擁有歐洲最大的中世紀老城區之一。",
+      "立陶宛是歐洲最後一個接受基督教的國家（1387年）。",
+      "歐洲地理中心位於維爾紐斯附近。",
+      "籃球在立陶宛幾乎是第二宗教。",
+      "庫爾斯沙嘴是與俄羅斯共享的聯合國世界遺產。",
+      "希奧利艾附近的十字架山有超過十萬座十字架。"
+    ]
+  },
+  _default: {
+    en: [
+      "Lithuania is located on the eastern coast of the Baltic Sea.",
+      "The three Baltic states are Estonia, Latvia, and Lithuania.",
+      "Lithuania was part of the Grand Duchy of Lithuania — one of Europe's largest empires.",
+      "Cepelinai (potato dumplings) is Lithuania's national dish.",
+      "Lithuania declared independence from the USSR on March 11, 1990."
+    ],
+    lt: [
+      "Lietuva yra rytinėje Baltijos jūros pakrantėje.",
+      "Trys Baltijos valstybės – Estija, Latvija ir Lietuva.",
+      "Lietuva buvo Lietuvos Didžiosios Kunigaikštystės dalis.",
+      "Cepelinai – Lietuvos nacionalinis patiekalas.",
+      "Lietuva paskelbė nepriklausomybę 1990 m. kovo 11 d."
+    ],
+    zh: [
+      "立陶宛位於波羅的海東岸。",
+      "波羅的海三國是愛沙尼亞、拉脫維亞和立陶宛。",
+      "立陶宛曾是立陶宛大公國的一部分——歐洲最大的帝國之一。",
+      "齊柏林飛艇餃是立陶宛的國菜。",
+      "立陶宛於1990年3月11日宣布脫離蘇聯獨立。"
+    ]
+  }
+};
+
+const HARD_POOL = ['LT','PL','DE','FR','ES','IT','GB','SE','FI','NO','UA','RO','BG','GR','TR','AT','HU','CZ','BE','NL','DK','IE','PT','BY','SK','HR','RS','BA','CH','EE','LV','SI','MK','AL','ME','MD','GE','AM','IS'];
+
+// ─── State ───
+const state = { mode:'medium', rounds:[], roundIndex:0, score:0, streak:0, best:0, locked:false, totalRounds:1 };
+
+const mapContainer = document.getElementById('map-container');
+const promptEl = document.getElementById('prompt');
+const scoreEl = document.getElementById('score');
+const streakEl = document.getElementById('streak');
+const bestEl = document.getElementById('best');
+const roundEl = document.getElementById('round-text');
+const progressEl = document.getElementById('progress');
+const fbTitle = document.getElementById('fb-title');
+const fbText = document.getElementById('fb-text');
+const fbCard = document.getElementById('feedback-card');
+const factEl = document.getElementById('fact');
+const nextBtn = document.getElementById('next-btn');
+const endOverlay = document.getElementById('end-overlay');
+const endScore = document.getElementById('end-score');
+const endLabel = document.getElementById('end-label');
+const endEmoji = document.getElementById('end-emoji');
+
+// ─── SVG ───
+async function loadMap() {
+  const r = await fetch('europe.svg');
+  const txt = await r.text();
+  const doc = new DOMParser().parseFromString(txt, 'image/svg+xml');
+  const svg = doc.querySelector('svg');
+  svg.setAttribute('viewBox', '0 0 1000 684');
+  svg.removeAttribute('width'); svg.removeAttribute('height');
+  svg.removeAttribute('fill'); svg.removeAttribute('stroke');
+  svg.removeAttribute('stroke-width'); svg.removeAttribute('stroke-linecap'); svg.removeAttribute('stroke-linejoin');
+  mapContainer.appendChild(svg);
+  svg.querySelectorAll('path[id]').forEach(p => {
+    p.addEventListener('click', () => handleClick(p.id, p));
+  });
+}
+
+function getCountryPaths() { return mapContainer.querySelectorAll('svg path[id]'); }
+
+function updateLabels() {
+  const svg = mapContainer.querySelector('svg');
+  if (!svg) return;
+  svg.querySelectorAll('text.country-label').forEach(t => t.remove());
+  if (state.mode !== 'easy') return;
+  svg.querySelectorAll('path[id]').forEach(p => {
+    const id = p.id;
+    if (!COUNTRIES[id]) return;
+    const bb = p.getBBox();
+    const tx = bb.x + bb.width / 2, ty = bb.y + bb.height / 2;
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    el.setAttribute('x', tx); el.setAttribute('y', ty);
+    el.setAttribute('class', 'country-label');
+    el.textContent = cname(id);
+    svg.appendChild(el);
+  });
+}
+
+// ─── Prompts ───
+function makePrompt(target) {
+  const name = cname(target);
+  const verbs = ['clickOn','findOn','whereIs','tapOn','locateOn','canYouFind','pointTo','showMe'];
+  const verb = verbs[Math.floor(Math.random() * verbs.length)];
+  const v = t(verb);
+  if (lang === 'zh') return `${v}${name}`;
+  return `${v} ${name}`;
+}
+
+function generateRounds() {
+  const rounds = [];
+  if (state.mode === 'easy' || state.mode === 'medium') {
+    for (let i = 0; i < state.totalRounds; i++)
+      rounds.push({ target: 'LT', prompt: makePrompt('LT') });
+  } else {
+    const pool = shuffle(HARD_POOL.slice());
+    const targets = ['LT','LT','LT'];
+    for (const c of pool) { if (targets.length >= state.totalRounds) break; if (c !== 'LT') targets.push(c); }
+    shuffle(targets);
+    for (const tgt of targets) rounds.push({ target: tgt, prompt: makePrompt(tgt) });
+  }
+  return rounds;
+}
+
+function startGame() {
+  state.rounds = generateRounds();
+  state.roundIndex = 0; state.score = 0; state.streak = 0; state.locked = false;
+  endOverlay.classList.remove('show');
+  applyLang();
+  updateLabels();
+  renderRound();
+}
+
+function renderRound() {
+  clearHighlights();
+  const r = state.rounds[state.roundIndex];
+  promptEl.textContent = r.prompt;
+  fbTitle.textContent = t('tapCountry');
+  fbText.textContent = t('findMatch');
+  fbCard.classList.remove('correct-state', 'wrong-state');
+  nextBtn.disabled = true;
+  state.locked = false;
+  updateStats();
+  randomFact(null);
+}
+
+function handleClick(id, el) {
+  if (state.locked) return;
+  if (!COUNTRIES[id]) return;
+  state.locked = true;
+  const r = state.rounds[state.roundIndex];
+  const correct = id === r.target;
+  getCountryPaths().forEach(p => { if (p.id !== id && p.id !== r.target) p.classList.add('dimmed'); });
+
+  // Drop a pin on clicked country
+  dropPin(el, correct);
+
+  if (correct) {
+    el.classList.add('highlight-correct');
+    state.score++; state.streak++; state.best = Math.max(state.best, state.streak);
+    fbTitle.textContent = t('correctFb');
+    fbText.textContent = `${t('thats')} ${cname(id)}. ${t('wellDone')}`;
+    fbCard.classList.add('correct-state');
+    launchConfetti();
+  } else {
+    el.classList.add('highlight-wrong');
+    state.streak = 0;
+    const ce = mapContainer.querySelector(`path#${CSS.escape(r.target)}`);
+    if (ce) {
+      ce.classList.add('highlight-answer');
+      dropPin(ce, true);
+      showDistanceLine(el, ce);
+    }
+    fbTitle.textContent = t('wrongFb');
+    fbText.textContent = `${t('youClicked')} ${cname(id)}. ${t('correctWas')} ${cname(r.target)}.`;
+    fbCard.classList.add('wrong-state');
+  }
+  randomFact(r.target);
+  // Single attempt: go straight to end after delay
+  setTimeout(() => showEnd(), 2200);
+  updateStats();
+}
+
+function dropPin(pathEl, isCorrect) {
+  const svg = mapContainer.querySelector('svg');
+  if (!svg) return;
+  const bb = pathEl.getBBox();
+  const pt = svg.createSVGPoint();
+  pt.x = bb.x + bb.width / 2; pt.y = bb.y + bb.height / 2;
+  const ctm = svg.getScreenCTM();
+  const screen = pt.matrixTransform(ctm);
+  const containerRect = mapContainer.getBoundingClientRect();
+  const pin = document.createElement('div');
+  pin.className = 'pin-marker';
+  const color = isCorrect ? 'var(--correct)' : 'var(--wrong)';
+  pin.innerHTML = `<svg viewBox="0 0 24 36"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="${color}"/><circle cx="12" cy="12" r="5" fill="white"/></svg>`;
+  pin.style.left = (screen.x - containerRect.left) + 'px';
+  pin.style.top = (screen.y - containerRect.top) + 'px';
+  mapContainer.style.position = 'relative';
+  mapContainer.appendChild(pin);
+}
+
+function showDistanceLine(wrongEl, correctEl) {
+  const svg = mapContainer.querySelector('svg');
+  if (!svg) return;
+  const bb1 = wrongEl.getBBox(); const bb2 = correctEl.getBBox();
+  const x1 = bb1.x + bb1.width/2, y1 = bb1.y + bb1.height/2;
+  const x2 = bb2.x + bb2.width/2, y2 = bb2.y + bb2.height/2;
+  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+  line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+  line.setAttribute('stroke','var(--wrong)'); line.setAttribute('stroke-width','2');
+  line.setAttribute('stroke-dasharray','6,4'); line.setAttribute('opacity','0.6');
+  svg.appendChild(line);
+}
+
+function launchConfetti() {
+  const colors = ['#FDB913','#006A44','#C1272D','#FFD700','#FF6B6B','#4ECDC4','#A855F7'];
+  for (let i = 0; i < 50; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.top = -10 + 'px';
+    piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    piece.style.width = (6 + Math.random()*8) + 'px';
+    piece.style.height = (6 + Math.random()*8) + 'px';
+    piece.style.animationDelay = (Math.random()*0.8) + 's';
+    piece.style.animationDuration = (2 + Math.random()*1.5) + 's';
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 4000);
+  }
+}
+
+function clearHighlights() {
+  getCountryPaths().forEach(p => p.classList.remove('highlight-correct','highlight-wrong','highlight-answer','dimmed'));
+}
+
+function updateStats() {
+  scoreEl.textContent = state.score; streakEl.textContent = state.streak; bestEl.textContent = state.best;
+  roundEl.textContent = `${state.roundIndex+1} / ${state.totalRounds}`;
+  progressEl.style.width = `${((state.roundIndex+1)/state.totalRounds)*100}%`;
+}
+
+function randomFact(targetId) {
+  const pool = (targetId === 'LT' ? FACTS.LT : FACTS._default);
+  const langPool = pool[lang] || pool.en;
+  factEl.innerHTML = '<strong>💡</strong> ' + langPool[Math.floor(Math.random()*langPool.length)];
+}
+
+function showEnd() {
+  const pct = state.score / state.totalRounds;
+  endScore.textContent = `${state.score} / ${state.totalRounds}`;
+  endEmoji.textContent = pct >= 1 ? '🏆' : pct >= 0.75 ? '🎉' : pct >= 0.5 ? '😊' : '🗺️';
+  endLabel.textContent = pct >= 1 ? t('perfect') : pct >= 0.75 ? t('great') : pct >= 0.5 ? t('notBad') : t('keepExploring');
+  endOverlay.classList.add('show');
+}
+
+function shuffle(a) { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+nextBtn.addEventListener('click', () => {
+  if (state.roundIndex < state.totalRounds-1) { state.roundIndex++; renderRound(); } else { showEnd(); }
+});
+// Remove Next button since it's single attempt
+nextBtn.style.display = 'none';
+document.getElementById('restart-btn').addEventListener('click', startGame);
+document.getElementById('end-restart').addEventListener('click', startGame);
+
+document.querySelectorAll('.lang-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    lang = btn.dataset.lang;
+    saveLang();
+    startGame();
+  });
+});
+
+initLang();
+loadMap().then(() => startGame());
+</script>
+</body>
+</html>
+
+<!-- Sync 04/23/2026 11:30:23 -->
