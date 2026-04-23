@@ -199,11 +199,9 @@
       <div class="card-emoji">🗺️</div>
       <span class="card-tag" id="map-tag">Map Game</span>
       <h2 id="map-title">Find Lithuania</h2>
-      <p class="desc" id="map-desc">Click on Lithuania (or other countries) on an interactive map of Europe. Three difficulty modes.</p>
+      <p class="desc" id="map-desc">Can you find Lithuania on the map of Europe? One shot — tap the right country!</p>
       <div class="card-features">
-        <span class="chip" id="chip-easy">🟢 Easy</span>
-        <span class="chip" id="chip-med">🟡 Medium</span>
-        <span class="chip" id="chip-hard">🔴 Hard</span>
+        <span class="chip" id="chip-oneshot">🎯 One Shot</span>
         <span class="chip" id="chip-count">44 countries</span>
       </div>
       <span class="card-cta" id="map-cta">Play Now <span>→</span></span>
@@ -211,8 +209,7 @@
   </div>
 
   <div class="footer">
-    <span id="footer-text">Lithuania Carnival Booth · Interactive games for visitors</span><br>
-    <a href="lithuania-booth-variants/index.html" id="footer-link">View older variants →</a>
+    <span id="footer-text">Lithuania Carnival Booth · Interactive games for visitors</span>
   </div>
 </div>
 
@@ -224,12 +221,11 @@ const UI = {
     quizTag: 'Poke Quiz', quizTitle: 'Lithuania Poke Quiz',
     quizDesc: 'Poke a box, answer a question! Flags, pictures, true/false and more — how much do you know about Lithuania?',
     mapTag: 'Map Game', mapTitle: 'Find Lithuania',
-    mapDesc: 'Click on Lithuania (or other countries) on an interactive map of Europe. Three difficulty modes.',
+    mapDesc: 'Can you find Lithuania on the map of Europe? One shot — tap the right country!',
     playCta: 'Play Now',
     geo: '🌍 Geography', cul: '🏛️ Culture', food: '🍲 Food', flag: '🇱🇹 Flags', sport: '🏀 Sports',
-    easy: '🟢 Easy', med: '🟡 Medium', hard: '🔴 Hard', count: '44 countries',
-    footer: 'Lithuania Carnival Booth · Interactive games for visitors',
-    footerLink: 'View older variants →'
+    oneshot: '🎯 One Shot', count: '44 countries',
+    footer: 'Lithuania Carnival Booth · Interactive games for visitors'
   },
   lt: {
     heroTitle: '<span class="accent2">Lietuvos</span> <span class="accent">Karnavaliniai Žaidimai</span>',
@@ -237,12 +233,11 @@ const UI = {
     quizTag: 'Poke Viktorina', quizTitle: 'Lietuvos Poke Viktorina',
     quizDesc: 'Paspausk langelį, atsakyk į klausimą! Vėliavos, paveikslėliai, tiesa/netiesa ir daugiau!',
     mapTag: 'Žemėlapio Žaidimas', mapTitle: 'Rask Lietuvą',
-    mapDesc: 'Paspauskite Lietuvą interaktyviame Europos žemėlapyje. Trys sudėtingumo lygiai.',
+    mapDesc: 'Ar rasite Lietuvą Europos žemėlapyje? Vienas bandymas — paspauskite teisingą šalį!',
     playCta: 'Žaisti',
     geo: '🌍 Geografija', cul: '🏛️ Kultūra', food: '🍲 Maistas', flag: '🇱🇹 Vėliavos', sport: '🏀 Sportas',
-    easy: '🟢 Lengva', med: '🟡 Vidutinis', hard: '🔴 Sunku', count: '44 šalys',
-    footer: 'Lietuvos karnavaliniai žaidimai · Interaktyvūs žaidimai lankytojams',
-    footerLink: 'Žiūrėti senesnius variantus →'
+    oneshot: '🎯 Vienas bandymas', count: '44 šalys',
+    footer: 'Lietuvos karnavaliniai žaidimai · Interaktyvūs žaidimai lankytojams'
   },
   zh: {
     heroTitle: '<span class="accent2">立陶宛</span> <span class="accent">嘉年華遊戲</span>',
@@ -250,12 +245,11 @@ const UI = {
     quizTag: '戳戳問答', quizTitle: '立陶宛戳戳問答',
     quizDesc: '戳一個格子，回答問題！國旗、圖片、是非題等——你對立陶宛了解多少？',
     mapTag: '地圖遊戲', mapTitle: '找到立陶宛',
-    mapDesc: '在互動式歐洲地圖上點擊立陶宛（或其他國家）。三種難度模式。',
+    mapDesc: '你能在歐洲地圖上找到立陶宛嗎？一次機會——點擊正確的國家！',
     playCta: '開始遊戲',
     geo: '🌍 地理', cul: '🏛️ 文化', food: '🍲 美食', flag: '🇱🇹 國旗', sport: '🏀 運動',
-    easy: '🟢 簡單', med: '🟡 中等', hard: '🔴 困難', count: '44個國家',
-    footer: '立陶宛嘉年華攤位 · 為訪客打造的互動遊戲',
-    footerLink: '查看舊版本 →'
+    oneshot: '🎯 一次機會', count: '44個國家',
+    footer: '立陶宛嘉年華攤位 · 為訪客打造的互動遊戲'
   }
 };
 
@@ -297,12 +291,9 @@ function applyLang() {
   document.getElementById('chip-food').textContent = u.food;
   document.getElementById('chip-flag').textContent = u.flag;
   document.getElementById('chip-sport').textContent = u.sport;
-  document.getElementById('chip-easy').textContent = u.easy;
-  document.getElementById('chip-med').textContent = u.med;
-  document.getElementById('chip-hard').textContent = u.hard;
+  document.getElementById('chip-oneshot').textContent = u.oneshot;
   document.getElementById('chip-count').textContent = u.count;
   document.getElementById('footer-text').textContent = u.footer;
-  document.getElementById('footer-link').textContent = u.footerLink;
   updateLinks();
 }
 
